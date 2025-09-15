@@ -8,6 +8,7 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRage.Utils;
 using VRageMath;
 
 namespace HnzUtils
@@ -171,6 +172,53 @@ namespace HnzUtils
             var emitter = new MyEntity3DSoundEmitter(character as MyEntity);
             var sound = new MySoundPair(cueName);
             emitter.PlaySound(sound);
+        }
+
+        public static bool TryLoadStorageXmlFile<T>(string fileName, out T content)
+        {
+            MyLog.Default.Info($"[HnzUtils] storage file loading: {fileName}");
+
+            if (!MyAPIGateway.Utilities.FileExistsInWorldStorage(fileName, typeof(T)))
+            {
+                MyLog.Default.Error($"[HnzUtils] storage file not found: {fileName}");
+                content = default(T);
+                return false;
+            }
+
+            try
+            {
+                using (var reader = MyAPIGateway.Utilities.ReadFileInWorldStorage(fileName, typeof(T)))
+                {
+                    var contentText = reader.ReadToEnd();
+                    content = MyAPIGateway.Utilities.SerializeFromXML<T>(contentText);
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.Error($"[HnzUtils] storage file failed loading: {e}");
+                content = default(T);
+                return false;
+            }
+        }
+
+        public static void SaveStorageFile<T>(string FileName, T content)
+        {
+            MyLog.Default.Info($"[HnzUtils] storage file saving: {FileName}");
+
+            try
+            {
+                using (var writer = MyAPIGateway.Utilities.WriteFileInWorldStorage(FileName, typeof(T)))
+                {
+                    var xml = MyAPIGateway.Utilities.SerializeToXML(content);
+                    writer.Write(xml);
+                    MyLog.Default.Info("[HnzUtils] storage file saved");
+                }
+            }
+            catch (Exception e)
+            {
+                MyLog.Default.Error($"[HnzUtils] storage file failed to save: {e}");
+            }
         }
     }
 }
