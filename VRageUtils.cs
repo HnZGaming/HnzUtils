@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -219,6 +220,18 @@ namespace HnzUtils
             {
                 MyLog.Default.Error($"[HnzUtils] storage file failed to save: {e}");
             }
+        }
+
+        public static bool TryCreatePhysicalObjectBuilder(MyDefinitionId defId, out MyObjectBuilder_PhysicalObject builder)
+        {
+            builder = null;
+
+            var item = MyDefinitionManager.Static.GetDefinition(defId);
+            if (item == null) return false;
+            if (item.Id.TypeId.IsNull) return false;
+
+            builder = MyObjectBuilderSerializer.CreateNewObject(defId) as MyObjectBuilder_PhysicalObject;
+            return builder != null;
         }
     }
 }

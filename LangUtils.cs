@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using VRage.Library.Utils;
 
 namespace HnzUtils
 {
@@ -117,6 +118,12 @@ namespace HnzUtils
             {
                 other.Add(element);
             }
+        }
+
+        public static T GetRandomElement<T>(this IReadOnlyList<T> list)
+        {
+            var r = MyRandom.Instance.Next();
+            return list[r % list.Count];
         }
     }
 }
