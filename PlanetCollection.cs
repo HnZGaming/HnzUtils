@@ -2,6 +2,7 @@
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace HnzUtils
@@ -42,6 +43,7 @@ namespace HnzUtils
             if (planet != null)
             {
                 _planets.Add(planet);
+                MyLog.Default.Info($"[HnzUtils] Planet added: {planet.AsteroidName}");
             }
         }
 

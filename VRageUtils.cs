@@ -141,15 +141,27 @@ namespace HnzUtils
             foreach (var v in voxels)
             {
                 Vector3D? i;
-                if (v.GetIntersectionWithLine(ref line, out i) && i != null)
-                {
-                    intersection = i.Value;
-                    return true;
-                }
+                if (!v.GetIntersectionWithLine(ref line, out i) || i == null) continue;
+
+                intersection = i.Value;
+                return true;
             }
 
             intersection = Vector3D.Zero;
             return false;
+        }
+
+        public static bool TryGetFirstRaycastHitInfoByType<T>(Vector3 from, Vector3 to, out IHitInfo hitInfo) where T : class, IMyEntity
+        {
+            hitInfo = null;
+            IHitInfo hit;
+            if (!MyAPIGateway.Physics.CastLongRay(from, to, out hit, false)) return false;
+
+            var v = hit.HitEntity as T;
+            if (v == null) return false;
+
+            hitInfo = hit;
+            return true;
         }
 
         public static bool IsInAnySafeZone(long entityId)
