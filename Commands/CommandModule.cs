@@ -41,6 +41,7 @@ namespace HnzUtils.Commands
         public void Register(Command command)
         {
             _commands.Add(command);
+            MyLog.Default.Info($"[HnzUtils] command registered: {command.Head}");
         }
 
         void OnMessageEntered(ulong sender, string messageText, ref bool sendToOthers)
@@ -48,7 +49,7 @@ namespace HnzUtils.Commands
             var prefix = $"/{_prefix}";
             if (!messageText.StartsWith(prefix)) return;
 
-            MyLog.Default.Info($"[HnzCoopSeason] command (client) entered by {sender}: {messageText}");
+            MyLog.Default.Info($"[HnzUtils] command (client) entered by {sender}: {messageText}");
             sendToOthers = false;
 
             var body = messageText.Substring(prefix.Length).Trim();
@@ -64,7 +65,7 @@ namespace HnzUtils.Commands
                 {
                     var data = Encoding.UTF8.GetBytes(body);
                     MyAPIGateway.Multiplayer.SendMessageToServer(_messageHandlerId, data);
-                    MyLog.Default.Info($"[HnzCoopSeason] command (client) sent to server: {body}");
+                    MyLog.Default.Info($"[HnzUtils] command (client) sent to server: {body}");
                 }
 
                 return;
@@ -84,7 +85,7 @@ namespace HnzUtils.Commands
         void OnCommandPayloadReceived(ushort id, byte[] load, ulong steamId, bool sentFromServer)
         {
             var body = Encoding.UTF8.GetString(load);
-            MyLog.Default.Info($"[HnzCoopSeason] command (server) received; steam: {steamId}, body: '{body}'");
+            MyLog.Default.Info($"[HnzUtils] command (server) received; steam: {steamId}, body: '{body}'");
 
             foreach (var command in _commands)
             {
@@ -117,7 +118,7 @@ namespace HnzUtils.Commands
             }
             catch (Exception e)
             {
-                MyLog.Default.Error($"[HnzCoopSeason] command {_prefix} {command.Head}: {command.Head} error: {e}");
+                MyLog.Default.Error($"[HnzUtils] command {_prefix} {command.Head}: {command.Head} error: {e}");
                 SendMessage?.Invoke(sender, Color.Red, "Error. Please talk to administrators.");
             }
         }
