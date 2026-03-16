@@ -65,6 +65,11 @@ namespace HnzUtils
             return (T)value;
         }
 
+        public static T WrappedElementAt<T>(this IReadOnlyList<T> self, int index)
+        {
+            return self[index % self.Count];
+        }
+
         public static HashSet<T> ToSet<T>(this IEnumerable<T> self)
         {
             return new HashSet<T>(self);
