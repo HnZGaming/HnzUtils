@@ -88,6 +88,16 @@ namespace HnzUtils
             return concat;
         }
 
+        public static Dictionary<K, V> ToDictionaryAllowDupes<T, K, V>(this IEnumerable<T> self, Func<T, K> keySelector, Func<T, V> valueSelector)
+        {
+            var d = new Dictionary<K, V>();
+            foreach (var t in self)
+            {
+                d[keySelector(t)] = valueSelector(t);
+            }
+            return d;
+        }
+
         public static int ParseIntOrDefault(this string self, int defaultValue)
         {
             int result;

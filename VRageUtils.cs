@@ -236,14 +236,101 @@ namespace HnzUtils
 
         public static bool TryCreatePhysicalObjectBuilder(MyDefinitionId defId, out MyObjectBuilder_PhysicalObject builder)
         {
-            builder = null;
-
-            var item = MyDefinitionManager.Static.GetDefinition(defId);
-            if (item == null) return false;
-            if (item.Id.TypeId.IsNull) return false;
-
             builder = MyObjectBuilderSerializer.CreateNewObject(defId) as MyObjectBuilder_PhysicalObject;
             return builder != null;
+        }
+
+        public static bool TryCalculateItemMinimalPrice(MyDefinitionId itemId, int scale, out int pricePerUnit)
+        {
+            pricePerUnit = 0;
+            var p = 0;
+            CalculateItemMinimalPrice(itemId, scale, ref p);
+            if (p <= 0) return false;
+
+            pricePerUnit = p;
+            return true;
+        }
+
+        /// <summary>
+        ///     Calculates the minimal price for a given item based on its blueprint prerequisites,
+        ///     production speed, and efficiency multipliers.
+        /// </summary>
+        /// <param name="itemId">The item to price.</param>
+        /// <param name="baseCostProductionSpeedMultiplier">Scaling factor for production time cost.</param>
+        /// <param name="minimalPrice">Accumulator for the calculated price (passed by ref).</param>
+        static void CalculateItemMinimalPrice(
+            MyDefinitionId itemId,
+            float baseCostProductionSpeedMultiplier,
+            ref int minimalPrice)
+        {
+            // --- Step 1: Check if the item has a hardcoded minimal price ---
+            MyPhysicalItemDefinition itemDef;
+            var itemExists = MyDefinitionManager.Static.TryGetDefinition(itemId, out itemDef);
+            if (itemExists && itemDef.MinimalPricePerUnit != -1)
+            {
+                // Use the predefined price directly — no need to calculate from blueprint
+                minimalPrice += itemDef.MinimalPricePerUnit;
+                return;
+            }
+
+            // --- Step 2: Look up the item's crafting blueprint ---
+            MyBlueprintDefinitionBase blueprint = null;
+            if (!MyDefinitionManager.Static.TryGetBlueprintDefinitionByResultId(itemId, out blueprint))
+                // No blueprint found — can't determine a price, bail out
+                return;
+
+            // --- Step 3: Determine the efficiency multiplier ---
+            // Ingots (refined from ore) use a flat 1.0 efficiency.
+            // Assembled components use the global assembler efficiency setting.
+            var efficiencyMultiplier = itemDef.IsIngot
+                ? 1f
+                : MyAPIGateway.Session.AssemblerEfficiencyMultiplier;
+
+            // --- Step 4: Calculate total ingredient cost ---
+            var totalIngredientCost = 0;
+
+            foreach (var ingredient in blueprint.Prerequisites)
+            {
+                // Recursively get the price of each ingredient
+                var ingredientUnitPrice = 0;
+                CalculateItemMinimalPrice(ingredient.Id, baseCostProductionSpeedMultiplier, ref ingredientUnitPrice);
+
+                // Scale by how much of this ingredient is needed, accounting for efficiency loss
+                var amountNeeded = (float)ingredient.Amount / efficiencyMultiplier;
+                totalIngredientCost += (int)(ingredientUnitPrice * amountNeeded);
+            }
+
+            // --- Step 5: Determine the production speed multiplier ---
+            // Ingots come from refineries; everything else from assemblers.
+            var speedMultiplier = itemDef.IsIngot
+                ? MyAPIGateway.Session.RefinerySpeedMultiplier
+                : MyAPIGateway.Session.AssemblerSpeedMultiplier;
+
+            // --- Step 6: Find this item in the blueprint's outputs and apply time cost ---
+            foreach (var result in blueprint.Results)
+            {
+                if (result.Id != itemId) continue;
+
+                var outputAmount = (float)result.Amount;
+                if (outputAmount == 0f)
+                {
+                    // Sanity check — a result with zero output would cause a divide-by-zero
+                    MyLog.Default.WriteToLogAndAssert("Amount is 0 for - " + result.Id);
+                    return;
+                }
+
+                // Production time cost factor:
+                //   A logarithmic penalty is added for items that take longer to produce.
+                //   Faster machines (higher speedMultiplier) reduce this penalty.
+                var productionTimeCostFactor =
+                    1f + (float)Math.Log(blueprint.BaseProductionTimeInSeconds + 1f)
+                    * baseCostProductionSpeedMultiplier
+                    / speedMultiplier;
+
+                // Final price = (total ingredient cost / output quantity) * time cost factor
+                minimalPrice += (int)(totalIngredientCost * (1f / outputAmount) * productionTimeCostFactor);
+                return;
+            }
         }
     }
 }
