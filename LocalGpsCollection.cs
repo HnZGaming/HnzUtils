@@ -13,6 +13,9 @@ namespace HnzUtils
         public IEnumerator<IMyGps> GetEnumerator() => _allGps.Values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+        /// <summary>Key/gps pairs, for callers that need to attribute a gps back to its owner.</summary>
+        public IEnumerable<KeyValuePair<K, IMyGps>> Pairs => _allGps;
+
         public void Clear()
         {
             _allGps.Clear();
@@ -27,6 +30,15 @@ namespace HnzUtils
         {
             _allGps.Add(key, gps);
             MyAPIGateway.Session.GPS.AddLocalGps(gps);
+        }
+
+        public void Remove(K key)
+        {
+            IMyGps gps;
+            if (!_allGps.TryGetValue(key, out gps)) return;
+
+            MyAPIGateway.Session.GPS.RemoveLocalGps(gps);
+            _allGps.Remove(key);
         }
 
         public void RemoveExceptFor(IEnumerable<K> keys)
