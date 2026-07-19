@@ -11,7 +11,7 @@ namespace HnzUtils
 
         public NetworkMessenger(object key)
         {
-            _key = (ushort)key.GetHashCode();
+            _key = VRageUtils.StableKey(key.ToString());
         }
 
         public void Load(OnMessageReceived handler)

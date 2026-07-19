@@ -38,6 +38,21 @@ namespace HnzUtils
             }
         }
 
+        /// <summary>
+        ///     Stable network channel id (FNV-1a 32-bit, xor-folded to 16). string.GetHashCode()
+        ///     can't be used: .NET 10 reseeds it per process, so client and server never agree.
+        /// </summary>
+        public static ushort StableKey(string text)
+        {
+            var h = 2166136261;
+            foreach (var c in text)
+            {
+                h = (h ^ c) * 16777619;
+            }
+
+            return (ushort)(h ^ (h >> 16));
+        }
+
         public static bool IsNpc(long identityId)
         {
             // faction type, not steam id: a client can't resolve an offline player's steam id
