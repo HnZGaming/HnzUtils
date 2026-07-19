@@ -40,7 +40,12 @@ namespace HnzUtils
 
         public static bool IsNpc(long identityId)
         {
-            return MyAPIGateway.Players.TryGetSteamId(identityId) == 0;
+            // faction type, not steam id: a client can't resolve an offline player's steam id
+            // and would call them an npc
+            var faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(identityId);
+            if (faction != null) return faction.FactionType != MyFactionTypes.PlayerMade;
+
+            return false; // factionless & unknown: assume player
         }
 
         public static GridOwnerType GetOwnerType(long ownerId)
